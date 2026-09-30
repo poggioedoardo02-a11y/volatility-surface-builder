@@ -10,7 +10,7 @@ import pandas as pd
 ArrayLike = Union[float, np.ndarray]
  
 # =====================================================================
-# MODULE 1: NORMAL DISTRIBUTION (NO SCIPY)
+# MODULE 1: NORMAL DISTRIBUTION
 # =====================================================================
  
 _erf = np.vectorize(math.erf, otypes=[float])  # built once, not at every call
