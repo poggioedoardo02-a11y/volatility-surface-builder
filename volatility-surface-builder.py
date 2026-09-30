@@ -116,7 +116,8 @@ def binomial_tree_price(
         option_values = np.maximum(0.0, K - asset_prices)
         
     for _ in range(steps - 1, -1, -1):
-        asset_prices = asset_prices[:-1] / u
+        # FIX: Backward induction corretta. Moltiplicare per u per risalire l'albero
+        asset_prices = asset_prices[:-1] * u 
         continuation_value = discount * (p * option_values[1:] + (1.0 - p) * option_values[:-1])
         
         if style == 'american':
@@ -236,10 +237,15 @@ def fetch_and_clean_options_data(ticker_symbol: str, spot_price: float) -> pd.Da
     return pd.DataFrame(options_data)
 
 
-def generate_volatility_surface(ticker_symbol: str = "SPY", risk_free_rate: float = 0.04) -> None:
+def generate_volatility_surface(ticker_symbol: str = "SPY", risk_free_rate: float = 0.04, dividend_yield: float = 0.015) -> None:
     """Construct and plot the 3D implied volatility surface without SciPy."""
     ticker = yf.Ticker(ticker_symbol)
-    spot_price = float(ticker.history(period="1d")['Close'].iloc[-1])
+    
+    try:
+        spot_price = float(ticker.history(period="1d")['Close'].iloc[-1])
+    except IndexError:
+        print(f"Error fetching spot price for {ticker_symbol}. Market might be closed or yfinance API is unavailable.")
+        return
     
     df = fetch_and_clean_options_data(ticker_symbol, spot_price)
     if df.empty:
@@ -254,7 +260,7 @@ def generate_volatility_surface(ticker_symbol: str = "SPY", risk_free_rate: floa
             K=row['strike'],
             tau=row['tau'],
             r=risk_free_rate,
-            q=0.0,
+            q=dividend_yield, # Aggiunto il dividend yield per l'S&P 500
             option_type='call'
         )
         for _, row in df.iterrows()
@@ -358,4 +364,4 @@ if __name__ == "__main__":
     print("\n=================================================")
     print("2. GENERATING VOLATILITY SURFACE (S&P 500 ETF)")
     print("=================================================")
-    generate_volatility_surface(ticker_symbol="SPY", risk_free_rate=0.04)
+    generate_volatility_surface(ticker_symbol="SPY", risk_free_rate=0.04, dividend_yield=0.015)
